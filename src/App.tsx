@@ -164,46 +164,65 @@ function App() {
         Add Task
       </StyledButton>
 
-      {/* Task List */}
-      <List>
-        {tasks.map((task) => (
-          <ListItem key={task.id} dense>
-            {editingId === task.id ? (
-              <TextField
-                fullWidth
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                onBlur={() => handleUpdateTask(task.id)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && handleUpdateTask(task.id)
-                }
-                autoFocus
-              />
-            ) : (
-              <ListItemText
-                primary={task.text}
-                secondary={`Project: ${projects.find(p => p.id === task.projectId)?.name}`}
-              />
-            )}
-            <ListItemSecondaryAction>
-              <IconButton
-                edge="end"
-                aria-label="edit"
-                onClick={() => handleEditTask(task.id)}
-              >
-                <EditIcon />
-              </IconButton>
-              <IconButton
-                edge="end"
-                aria-label="delete"
-                onClick={() => handleDeleteTask(task.id)}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
-        ))}
-      </List>
+      {/* Projects and Tasks View */}
+      <Typography variant="h5" component="h2" gutterBottom style={{ marginTop: "2rem" }}>
+        Projects and Tasks
+      </Typography>
+      {projects.map((project) => (
+        <div key={project.id} style={{ marginBottom: "2rem" }}>
+          <Typography variant="h6" component="h3" gutterBottom>
+            {project.name}
+          </Typography>
+          <List>
+            {tasks
+              .filter((task) => task.projectId === project.id)
+              .map((task) => (
+                <ListItem key={task.id} dense>
+                  {editingId === task.id ? (
+                    <TextField
+                      fullWidth
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onBlur={() => handleUpdateTask(task.id)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && handleUpdateTask(task.id)
+                      }
+                      autoFocus
+                    />
+                  ) : (
+                    <ListItemText primary={task.text} />
+                  )}
+                  <ListItemSecondaryAction>
+                    <IconButton
+                      edge="end"
+                      aria-label="edit"
+                      onClick={() => handleEditTask(task.id)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => handleDeleteTask(task.id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+          </List>
+          {tasks.filter((task) => task.projectId === project.id).length === 0 && (
+            <Typography variant="body2" color="textSecondary">
+              No tasks for this project yet.
+            </Typography>
+          )}
+        </div>
+      ))}
+      {projects.length === 0 && (
+        <Typography variant="body1" color="textSecondary">
+          No projects created yet. Add a project to get started.
+        </Typography>
+      )}
     </AppContainer>
   );
 }
