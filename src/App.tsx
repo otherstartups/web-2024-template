@@ -14,6 +14,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Chip,
+  OutlinedInput,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -21,7 +23,7 @@ import EditIcon from "@mui/icons-material/Edit";
 interface Task {
   id: number;
   text: string;
-  projectId: number;
+  projectIds: number[]; // Changed from projectId to projectIds
 }
 
 interface Project {
@@ -53,6 +55,7 @@ function App() {
   const [selectedProject, setSelectedProject] = useState<number | "">("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
+  const [selectedProjects, setSelectedProjects] = useState<number[]>([]); // New state for multi-select
 
   useEffect(() => {
     if (projects.length === 0) {
@@ -65,12 +68,13 @@ function App() {
   }, [projects, setProjects]);
 
   const handleAddTask = () => {
-    if (newTask.trim() !== "" && selectedProject !== "") {
+    if (newTask.trim() !== "" && selectedProjects.length > 0) {
       setTasks([
         ...tasks,
-        { id: Date.now(), text: newTask.trim(), projectId: selectedProject as number },
+        { id: Date.now(), text: newTask.trim(), projectIds: selectedProjects },
       ]);
       setNewTask("");
+      setSelectedProjects([]);
     }
   };
 
@@ -132,7 +136,7 @@ function App() {
         Add Project
       </StyledButton>
 
-      {/* Add Task Section */}
+      {/* Modified Add Task Section */}
       <TextField
         fullWidth
         variant="outlined"
@@ -143,10 +147,20 @@ function App() {
         style={{ marginTop: "1rem" }}
       />
       <FormControl fullWidth style={{ marginTop: "1rem" }}>
-        <InputLabel>Select Project</InputLabel>
+        <InputLabel id="multiple-project-label">Select Projects</InputLabel>
         <Select
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value as number)}
+          labelId="multiple-project-label"
+          multiple
+          value={selectedProjects}
+          onChange={(e) => setSelectedProjects(e.target.value as number[])}
+          input={<OutlinedInput label="Select Projects" />}
+          renderValue={(selected) => (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {selected.map((value) => (
+                <Chip key={value} label={projects.find(p => p.id === value)?.name} />
+              ))}
+            </div>
+          )}
         >
           {projects.map((project) => (
             <MenuItem key={project.id} value={project.id}>
@@ -175,7 +189,7 @@ function App() {
           </Typography>
           <List>
             {tasks
-              .filter((task) => task.projectId === project.id)
+              .filter((task) => task.projectIds.includes(project.id))
               .map((task) => (
                 <ListItem key={task.id} dense>
                   {editingId === task.id ? (
@@ -190,7 +204,10 @@ function App() {
                       autoFocus
                     />
                   ) : (
-                    <ListItemText primary={task.text} />
+                    <ListItemText 
+                      primary={task.text}
+                      secondary={`Projects: ${task.projectIds.map(id => projects.find(p => p.id === id)?.name).join(', ')}`}
+                    />
                   )}
                   <ListItemSecondaryAction>
                     <IconButton
@@ -211,7 +228,7 @@ function App() {
                 </ListItem>
               ))}
           </List>
-          {tasks.filter((task) => task.projectId === project.id).length === 0 && (
+          {tasks.filter((task) => task.projectIds.includes(project.id)).length === 0 && (
             <Typography variant="body2" color="textSecondary">
               No tasks for this project yet.
             </Typography>
