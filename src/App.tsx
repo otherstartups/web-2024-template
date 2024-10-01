@@ -10,22 +10,29 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   IconButton,
-  Checkbox,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 
-interface Todo {
+interface Task {
   id: number;
   text: string;
-  done: boolean;
+  projectId: number;
+}
+
+interface Project {
+  id: number;
+  name: string;
 }
 
 const AppContainer = styled.div`
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
 `;
 
 const StyledButton = styled(Button)`
@@ -34,70 +41,66 @@ const StyledButton = styled(Button)`
   }
 `;
 
-const StyledListItemText = styled(ListItemText)<{ done: boolean }>`
-  && {
-    text-decoration: ${(props) => (props.done ? "line-through" : "none")};
-  }
-`;
-
 function App() {
-  const [todos, setTodos] = useLocalStorageState<Todo[]>("todos", {
+  const [tasks, setTasks] = useLocalStorageState<Task[]>("tasks", {
     defaultValue: [],
   });
-  const [newTodo, setNewTodo] = useState("");
+  const [projects, setProjects] = useLocalStorageState<Project[]>("projects", {
+    defaultValue: [],
+  });
+  const [newTask, setNewTask] = useState("");
+  const [newProject, setNewProject] = useState("");
+  const [selectedProject, setSelectedProject] = useState<number | "">("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editText, setEditText] = useState(""); // Add this line
+  const [editText, setEditText] = useState("");
 
   useEffect(() => {
-    if (todos.length === 0) {
-      const boilerplateTodos = [
-        { id: 1, text: "Install Node.js", done: false },
-        { id: 2, text: "Install Cursor IDE", done: false },
-        { id: 3, text: "Log into Github", done: false },
-        { id: 4, text: "Fork a repo", done: false },
-        { id: 5, text: "Make changes", done: false },
-        { id: 6, text: "Commit", done: false },
-        { id: 7, text: "Deploy", done: false },
+    if (projects.length === 0) {
+      const initialProjects: Project[] = [
+        { id: 1, name: "Project A" },
+        { id: 2, name: "Project B" },
       ];
-      setTodos(boilerplateTodos);
+      setProjects(initialProjects);
     }
-  }, [todos, setTodos]);
+  }, [projects, setProjects]);
 
-  const handleAddTodo = () => {
-    if (newTodo.trim() !== "") {
-      setTodos([
-        ...todos,
-        { id: Date.now(), text: newTodo.trim(), done: false },
+  const handleAddTask = () => {
+    if (newTask.trim() !== "" && selectedProject !== "") {
+      setTasks([
+        ...tasks,
+        { id: Date.now(), text: newTask.trim(), projectId: selectedProject as number },
       ]);
-      setNewTodo("");
+      setNewTask("");
     }
   };
 
-  const handleDeleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
+  const handleAddProject = () => {
+    if (newProject.trim() !== "") {
+      setProjects([
+        ...projects,
+        { id: Date.now(), name: newProject.trim() },
+      ]);
+      setNewProject("");
+    }
   };
 
-  const handleToggleTodo = (id: number) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, done: !todo.done } : todo
-      )
-    );
+  const handleDeleteTask = (id: number) => {
+    setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  const handleEditTodo = (id: number) => {
+  const handleEditTask = (id: number) => {
     setEditingId(id);
-    const todoToEdit = todos.find((todo) => todo.id === id);
-    if (todoToEdit) {
-      setEditText(todoToEdit.text);
+    const taskToEdit = tasks.find((task) => task.id === id);
+    if (taskToEdit) {
+      setEditText(taskToEdit.text);
     }
   };
 
-  const handleUpdateTodo = (id: number) => {
+  const handleUpdateTask = (id: number) => {
     if (editText.trim() !== "") {
-      setTodos(
-        todos.map((todo) =>
-          todo.id === id ? { ...todo, text: editText.trim() } : todo
+      setTasks(
+        tasks.map((task) =>
+          task.id === id ? { ...task, text: editText.trim() } : task
         )
       );
     }
@@ -108,59 +111,92 @@ function App() {
   return (
     <AppContainer>
       <Typography variant="h4" component="h1" gutterBottom>
-        Todo List
+        Project Management
       </Typography>
+
+      {/* Add Project Section */}
       <TextField
         fullWidth
         variant="outlined"
-        label="New Todo"
-        value={newTodo}
-        onChange={(e) => setNewTodo(e.target.value)}
-        onKeyPress={(e) => e.key === "Enter" && handleAddTodo()}
-        autoFocus // Add this line to enable autofocus
+        label="New Project"
+        value={newProject}
+        onChange={(e) => setNewProject(e.target.value)}
+        onKeyPress={(e) => e.key === "Enter" && handleAddProject()}
       />
       <StyledButton
         variant="contained"
         color="primary"
         fullWidth
-        onClick={handleAddTodo}
+        onClick={handleAddProject}
       >
-        Add Todo
+        Add Project
       </StyledButton>
+
+      {/* Add Task Section */}
+      <TextField
+        fullWidth
+        variant="outlined"
+        label="New Task"
+        value={newTask}
+        onChange={(e) => setNewTask(e.target.value)}
+        onKeyPress={(e) => e.key === "Enter" && handleAddTask()}
+        style={{ marginTop: "1rem" }}
+      />
+      <FormControl fullWidth style={{ marginTop: "1rem" }}>
+        <InputLabel>Select Project</InputLabel>
+        <Select
+          value={selectedProject}
+          onChange={(e) => setSelectedProject(e.target.value as number)}
+        >
+          {projects.map((project) => (
+            <MenuItem key={project.id} value={project.id}>
+              {project.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <StyledButton
+        variant="contained"
+        color="primary"
+        fullWidth
+        onClick={handleAddTask}
+      >
+        Add Task
+      </StyledButton>
+
+      {/* Task List */}
       <List>
-        {todos.map((todo) => (
-          <ListItem key={todo.id} dense>
-            <Checkbox
-              edge="start"
-              checked={todo.done}
-              onChange={() => handleToggleTodo(todo.id)}
-            />
-            {editingId === todo.id ? (
+        {tasks.map((task) => (
+          <ListItem key={task.id} dense>
+            {editingId === task.id ? (
               <TextField
                 fullWidth
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                onBlur={() => handleUpdateTodo(todo.id)}
+                onBlur={() => handleUpdateTask(task.id)}
                 onKeyPress={(e) =>
-                  e.key === "Enter" && handleUpdateTodo(todo.id)
+                  e.key === "Enter" && handleUpdateTask(task.id)
                 }
                 autoFocus
               />
             ) : (
-              <StyledListItemText primary={todo.text} done={todo.done} />
+              <ListItemText
+                primary={task.text}
+                secondary={`Project: ${projects.find(p => p.id === task.projectId)?.name}`}
+              />
             )}
             <ListItemSecondaryAction>
               <IconButton
                 edge="end"
                 aria-label="edit"
-                onClick={() => handleEditTodo(todo.id)}
+                onClick={() => handleEditTask(task.id)}
               >
                 <EditIcon />
               </IconButton>
               <IconButton
                 edge="end"
                 aria-label="delete"
-                onClick={() => handleDeleteTodo(todo.id)}
+                onClick={() => handleDeleteTask(task.id)}
               >
                 <DeleteIcon />
               </IconButton>
